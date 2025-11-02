@@ -1,0 +1,182 @@
+{
+  "name": "testcase-generator-desktop",
+  "version": "2.2.0",
+  "description": "Desktop TestCase Generator with AI-powered test case generation and JIRA integration",
+  "main": "src/main/main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "concurrently \"npm run react:dev\" \"npm run electron:wait\"",
+    "react:dev": "cross-env BROWSER=none react-scripts start",
+    "react:build": "react-scripts build",
+    "electron:dev": "cross-env ELECTRON_IS_DEV=true electron .",
+    "electron:wait": "wait-on http://localhost:3000 && npm run electron:dev",
+    "electron:pack": "electron-builder",
+    "preelectron:pack": "npm run react:build",
+    "build": "npm run react:build && electron-builder",
+    "dist": "npm run react:build && electron-builder --publish=never",
+    "dist:mac": "npm run react:build && electron-builder --mac --publish=never",
+    "dist:win": "npm run react:build && electron-builder --win --publish=never",
+    "dist:all": "npm run react:build && electron-builder --mac --win --publish=never",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "testcase",
+    "generator",
+    "ai",
+    "langchain",
+    "jira",
+    "electron",
+    "react",
+    "desktop"
+  ],
+  "author": "Arjit Yadav",
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.19",
+    "@mui/material": "^5.14.20",
+    "@mui/x-data-grid": "^6.18.1",
+    "axios": "^1.6.2",
+    "electron-is-dev": "^2.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3",
+    "react-scripts": "5.0.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^16.18.68",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "@types/uuid": "^9.0.7",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^27.1.3",
+    "electron-builder": "^24.8.1",
+    "typescript": "^4.9.5",
+    "wait-on": "^9.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "build": {
+    "appId": "com.materialplus.testgen",
+    "productName": "M+ TGen AI-Powered TestCase Generator",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "build/**/*",
+      "src/**/*",
+      "backend/**/*",
+      "!backend/**/__pycache__/**/*",
+      "!backend/**/*.pyc",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "src/main/main.js"
+    },
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**/*",
+          "!**/*.pyc"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "darkModeSupport": true,
+      "identity": null,
+      "signIgnore": [
+        ".*"
+      ]
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TGen",
+      "license": "LICENSE"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.exe"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    }
+  }
+}

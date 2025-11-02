@@ -1,0 +1,7 @@
+Test Category: {test_category}
+Test Type: {test_type}
+
+Requirement:
+"""{requirement_text}"""
+
+Generate {test_type} test cases that focus on {test_focus}.

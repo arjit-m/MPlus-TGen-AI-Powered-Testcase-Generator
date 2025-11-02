@@ -1,0 +1,23 @@
+# Core LLM and agent dependencies
+langchain>=0.1.0  # Base LangChain framework
+langchain-core>=0.1.0  # Core LangChain components
+langgraph>=0.0.1  # Graph-based LangChain workflows
+
+# LLM Provider integrations
+langchain-openai>=0.0.1  # OpenAI support
+langchain-anthropic>=0.0.1  # Claude support
+langchain-google-genai>=0.0.1  # Google Gemini support
+langchain-ollama>=0.0.1  # Local Ollama support
+
+# HTTP and API dependencies
+httpx>=0.24.0  # Async HTTP client
+requests>=2.31.0  # Sync HTTP client
+urllib3>=2.0.0  # HTTP client library
+
+# Data processing
+pandas>=2.0.0  # Data manipulation
+openpyxl>=3.1.0  # Excel file support
+json5>=0.9.14  # Enhanced JSON parsing
+
+# Type hints
+typing-extensions>=4.7.0  # Modern typing features

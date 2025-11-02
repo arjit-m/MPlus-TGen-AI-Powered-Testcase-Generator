@@ -32,11 +32,7 @@ npm run react:build
 
 **Step 4: Run the Application**
 ```cmd
-# Development mode
-npm run electron:dev
-
-# Or simply
-electron .
+npm start
 ```
 
 ## ✨ Features
@@ -50,7 +46,6 @@ electron .
 - **Real-time Logging**: Activity logs with progress tracking
 - **File Management**: Load requirements from files or enter manually
 - **Requirement Enhancement**: AI-powered requirement improvement
-- **TestRail Integration**: Automatic test case synchronization
 
 ## 📋 Prerequisites
 
@@ -182,8 +177,7 @@ AI-Test-Case-Generator/
 │   │   ├── drivers/         # Integration drivers
 │   │   │   └── fetch_jira_issues.py
 │   │   └── integrations/    # External integrations
-│   │       ├── jira.py
-│   │       └── testrail.py
+│   │       └── jira.py
 │   ├── data/                # Sample data
 │   │   └── requirements/    # Sample requirement files
 │   └── outputs/             # Generated outputs
@@ -422,11 +416,10 @@ For support and questions:
 
 - AI-powered test execution
 - Advanced test case deduplication
-- Slack notifications
-- TestRail deeper integration
-- Multi-language support
 - Custom test templates
+- Priority based Test Cases generation
+- Design Technique based Test Cases generation
 
 ---
 
-**Built with ❤️ using Electron, React, Material-UI, and AI**
+**Built with ❤️ using Electron, React, Node, Material-UI, Python and AI**

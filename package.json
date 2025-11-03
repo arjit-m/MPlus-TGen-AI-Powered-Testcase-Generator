@@ -44,7 +44,8 @@
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3",
     "react-scripts": "5.0.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^16.18.68",

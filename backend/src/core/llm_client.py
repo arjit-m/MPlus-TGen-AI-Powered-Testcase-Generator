@@ -40,51 +40,46 @@ for parsing and cleanup).
 
 from __future__ import annotations
 import os
-import json
 from typing import List, Dict
 import httpx
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 import logging
 
+import logging
+
+# Visibility / logging flags (class-friendly defaults)
+LLM_LOG = os.getenv("LLM_LOG", "1").strip().lower() in ("1", "true", "yes")
+LLM_DEBUG = os.getenv("LLM_DEBUG", "0").strip().lower() in ("1", "true", "yes")
+
 # module logger (agents should configure logging.basicConfig in their entrypoints)
 logger = logging.getLogger(__name__)
 
-def load_settings():
-    """Load configuration from settings.json"""
-    config_path = os.getenv("CONFIG_PATH")
-    if not config_path or not os.path.exists(config_path):
-        logger.warning("CONFIG_PATH not set or file not found, using defaults")
-        return {}
-        
-    try:
-        with open(config_path, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load settings.json: {e}")
-        return {}
+# Load .env but don't override existing environment variables
+# This allows Electron to pass API keys via environment that take precedence
+# Skip loading .env if SKIP_DOTENV is set (for test connections)
+if os.getenv("SKIP_DOTENV") != "1":
+    # Check if a custom .env path is provided via environment variable
+    custom_env_path = os.getenv("DOTENV_PATH")
+    if custom_env_path and os.path.exists(custom_env_path):
+        logger.info(f"Loading .env from custom path: {custom_env_path}")
+        load_dotenv(dotenv_path=custom_env_path, override=False)
+    else:
+        load_dotenv(override=False)
+else:
+    logger.info("Skipping .env loading (SKIP_DOTENV=1)")
 
-# Load settings from config file
-settings = load_settings()
-
-# Configuration with defaults
-PROVIDER = settings.get("provider", "ollama").strip().lower()
-MODEL = settings.get("model", "mistral:latest").strip()
-OLLAMA_HOST = settings.get("ollamaHost", "http://localhost:11434").strip()
-OPENAI_API_KEY = settings.get("openaiApiKey", "")
-ANTHROPIC_API_KEY = settings.get("anthropicApiKey", "")
-GOOGLE_API_KEY = settings.get("googleApiKey", "")
-
-# Additional settings with defaults
-TIMEOUT_S = 60
-DISABLE_SSL_VERIFY = False
+PROVIDER = (os.getenv("PROVIDER") or "ollama").strip().lower()
+MODEL = (os.getenv("MODEL") or "mistral:latest").strip()
+OLLAMA_HOST = (os.getenv("OLLAMA_HOST") or "http://localhost:11434").strip()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or ""
+TIMEOUT_S = int(os.getenv("LLM_TIMEOUT_S") or "60")
+# SSL verification control (useful for corporate proxies with self-signed certs)
+DISABLE_SSL_VERIFY = os.getenv("DISABLE_SSL_VERIFY", "0").strip().lower() in ("1", "true", "yes")
+# No temperature handling for Day-1: keep payloads simple and compatible.
 LLM_TEMPERATURE = None
-LLM_LOG = settings.get("logLevel", "INFO").upper() in ("DEBUG", "INFO")
-LLM_DEBUG = settings.get("logLevel", "INFO").upper() == "DEBUG"
-
-# Debug logging
-logger.info(f"Configuration loaded. Provider: {PROVIDER}, Model: {MODEL}")
 
 Message = Dict[str, str]
 
@@ -141,6 +136,7 @@ def _make_llm():
     else:
         raise NotImplementedError(
             f"Unsupported PROVIDER='{PROVIDER}'. Use 'ollama' or 'openai'.\n"
+            "Please configure your LLM provider in the Configuration page."
         )
 
 def chat(messages: List[Message], timeout: int = TIMEOUT_S) -> str:
@@ -190,8 +186,3 @@ def chat(messages: List[Message], timeout: int = TIMEOUT_S) -> str:
         # log exception with stacktrace
         logger.exception("[LLM] ✖ error after %.2fs: %s", dt, type(e).__name__)
         raise
-
-logger.info("Environment variables loaded:")
-for key, value in os.environ.items():
-    if key.startswith("LLM") or key in ["PROVIDER", "MODEL", "OLLAMA_HOST", "OPENAI_API_KEY"]:
-        logger.info(f"{key}={value}")

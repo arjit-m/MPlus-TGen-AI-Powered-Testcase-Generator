@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import {
   Container,
   Paper,
@@ -40,8 +41,8 @@ function App() {
   // State management
   const [requirementText, setRequirementText] = useState('');
   const [requirementFile, setRequirementFile] = useState(null);
-  const [testCategory, setTestCategory] = useState(''); // Start with empty selection
-  const [testType, setTestType] = useState('');
+  const [testCategory, setTestCategory] = useState('functional'); // Default to functional
+  const [testType, setTestType] = useState('smoke'); // Default to smoke
   const [generatedCases, setGeneratedCases] = useState([]);
   const [qualityReport, setQualityReport] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -252,6 +253,10 @@ function App() {
       });
       return;
     }
+    
+    // Ensure we have valid category and type
+    const category = testCategory || 'functional';
+    const type = testType || 'smoke';
 
     // Don't check config here - button should be disabled if not configured
     setIsEnhancing(true);
@@ -259,7 +264,7 @@ function App() {
     addLog(`✨ ${enhancementLabel} with AI...`);
 
     try {
-      const result = await window.electronAPI.enhanceRequirement(requirementText, testCategory, testType, enhancementType);
+      const result = await window.electronAPI.enhanceRequirement(requirementText, category, type, enhancementType);
       
       if (result.success) {
         setRequirementText(result.enhancedRequirement);
@@ -467,12 +472,11 @@ function App() {
       });
 
       if (!result.canceled) {
-        let content = '';
-        
-        if (format === 'csv') {
-          // Generate CSV content
-          const headers = ['Test ID', 'Title', 'Steps', 'Expected Result', 'Priority', 'Quality Score'];
-          content = headers.join(',') + '\n';
+        if (format === 'xlsx') {
+          // Generate Excel file using xlsx library
+          const worksheetData = [
+            ['Test ID', 'Title', 'Steps', 'Expected Result', 'Priority', 'Category', 'Type', 'Quality Score']
+          ];
           
           generatedCases.forEach(testCase => {
             const qualityScore = qualityReport?.individual_scores?.find(
@@ -480,36 +484,106 @@ function App() {
             )?.total_score || 0;
             
             const steps = Array.isArray(testCase.steps) 
-              ? testCase.steps.join(' | ')
+              ? testCase.steps.join('\n')
               : testCase.steps;
             
-            const row = [
+            worksheetData.push([
               testCase.id,
-              `"${testCase.title}"`,
-              `"${steps}"`,
-              `"${testCase.expected}"`,
+              testCase.title,
+              steps,
+              testCase.expected,
               testCase.priority,
+              testCase.category || 'Functional',
+              testCase.type || 'Smoke',
               qualityScore > 0 ? `${qualityScore.toFixed(1)}/10` : 'N/A'
-            ];
-            content += row.join(',') + '\n';
+            ]);
           });
-        } else if (format === 'zephyr') {
-          // Generate Zephyr CSV content
-          content = convertToZephyrCSV(generatedCases);
-        }
 
-        const writeResult = await window.electronAPI.writeFile(result.filePath, content);
-        
-        if (writeResult.success) {
-          addLog(`📄 Test cases exported to ${format.toUpperCase()}: ${result.filePath}`);
-          await window.electronAPI.showMessageBox({
-            type: 'info',
-            title: 'Export Success',
-            message: `Test cases successfully exported to:\n${result.filePath}`,
-            buttons: ['OK']
-          });
+          const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+          
+          // Set column widths
+          worksheet['!cols'] = [
+            { wch: 10 },  // Test ID
+            { wch: 40 },  // Title
+            { wch: 60 },  // Steps
+            { wch: 40 },  // Expected Result
+            { wch: 12 },  // Priority
+            { wch: 15 },  // Category
+            { wch: 12 },  // Type
+            { wch: 15 }   // Quality Score
+          ];
+
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Test Cases');
+          
+          // Generate binary buffer instead of writing directly
+          const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+          
+          // Convert buffer to base64 string for IPC
+          const base64 = btoa(
+            new Uint8Array(excelBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+          );
+          
+          // Write using Electron API
+          const writeResult = await window.electronAPI.writeFile(result.filePath, base64, 'base64');
+          
+          if (writeResult.success) {
+            addLog(`📊 Test cases exported to Excel: ${result.filePath}`);
+            await window.electronAPI.showMessageBox({
+              type: 'info',
+              title: 'Export Success',
+              message: `Test cases successfully exported to:\n${result.filePath}`,
+              buttons: ['OK']
+            });
+          } else {
+            throw new Error(writeResult.error);
+          }
         } else {
-          throw new Error(writeResult.error);
+          // CSV and Zephyr formats
+          let content = '';
+          
+          if (format === 'csv') {
+            // Generate CSV content
+            const headers = ['Test ID', 'Title', 'Steps', 'Expected Result', 'Priority', 'Quality Score'];
+            content = headers.join(',') + '\n';
+            
+            generatedCases.forEach(testCase => {
+              const qualityScore = qualityReport?.individual_scores?.find(
+                s => s.test_id === testCase.id
+              )?.total_score || 0;
+              
+              const steps = Array.isArray(testCase.steps) 
+                ? testCase.steps.join(' | ')
+                : testCase.steps;
+              
+              const row = [
+                testCase.id,
+                `"${testCase.title}"`,
+                `"${steps}"`,
+                `"${testCase.expected}"`,
+                testCase.priority,
+                qualityScore > 0 ? `${qualityScore.toFixed(1)}/10` : 'N/A'
+              ];
+              content += row.join(',') + '\n';
+            });
+          } else if (format === 'zephyr') {
+            // Generate Zephyr CSV content
+            content = convertToZephyrCSV(generatedCases);
+          }
+
+          const writeResult = await window.electronAPI.writeFile(result.filePath, content);
+          
+          if (writeResult.success) {
+            addLog(`📄 Test cases exported to ${format.toUpperCase()}: ${result.filePath}`);
+            await window.electronAPI.showMessageBox({
+              type: 'info',
+              title: 'Export Success',
+              message: `Test cases successfully exported to:\n${result.filePath}`,
+              buttons: ['OK']
+            });
+          } else {
+            throw new Error(writeResult.error);
+          }
         }
       }
     } catch (error) {
@@ -527,9 +601,9 @@ function App() {
   const handleAbout = async () => {
     await window.electronAPI.showMessageBox({
       type: 'info',
-      title: 'About TestCase Generator',
+      title: 'About M+ TGen',
       message: 'M+ TGen AI-Powered Test Case Generator',
-      detail: `Version: ${appVersion}\n\nAI-powered test case generation.\n\nBuilt with Electron, React, and Node.\nPowered by LangChain and Python backend.`,
+      detail: `Version: ${appVersion}\n\nAI-powered test case generation.\n\nBuilt with Electron, React, Node and Material-UI.\nPowered by LangChain and Python backend.`,
       buttons: ['OK']
     });
   };

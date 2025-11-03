@@ -13,12 +13,28 @@ An Electron-based desktop application for AI-powered test case generation with J
 ### Installation & Setup
 
 **Step 1: Install Python Dependencies**
-```cmd
-# Windows
-setup-windows.bat
 
-# The application will create a Python virtual environment and install required packages
+For Windows:
+```cmd
+# Run the setup script
+setup-windows.bat
 ```
+
+For Mac:
+```bash
+# First make the script executable
+chmod +x setup-mac.sh
+
+# Then run the setup script
+./setup-mac.sh
+```
+
+The setup script will:
+- Check for Python installation
+- Create a Python virtual environment in backend/.venv
+- Install required Python packages including python-dotenv
+- Verify the installation and dependencies
+- Set up the necessary environment
 
 **Step 2: Install Node.js Dependencies**
 ```cmd
@@ -32,7 +48,11 @@ npm run react:build
 
 **Step 4: Run the Application**
 ```cmd
-npm start
+# Development mode
+npm run electron:dev
+
+# Or simply
+electron .
 ```
 
 ## ✨ Features
@@ -46,6 +66,7 @@ npm start
 - **Real-time Logging**: Activity logs with progress tracking
 - **File Management**: Load requirements from files or enter manually
 - **Requirement Enhancement**: AI-powered requirement improvement
+- **TestRail Integration**: Automatic test case synchronization
 
 ## 📋 Prerequisites
 
@@ -143,8 +164,9 @@ The built application will be available in the `dist/` directory.
 AI-Test-Case-Generator/
 ├── package.json              # Dependencies and scripts
 ├── setup-windows.bat         # Windows setup script
+├── setup-mac.sh             # Mac setup script
 ├── src/
-│   ├── main/                 # Electron main process
+│   ├── main/                # Electron main process
 │   │   ├── main.js          # Main Electron process & IPC handlers
 │   │   └── preload.js       # Preload script for security
 │   ├── components/          # React components
@@ -165,6 +187,7 @@ AI-Test-Case-Generator/
 │   ├── App.js               # Main React application
 │   └── index.js             # React entry point
 ├── backend/                 # Python backend
+│   ├── requirements.txt     # Python dependencies
 │   ├── src/
 │   │   ├── agents/          # AI agents
 │   │   │   ├── simple_requirement_enhancer.py
@@ -177,10 +200,18 @@ AI-Test-Case-Generator/
 │   │   ├── drivers/         # Integration drivers
 │   │   │   └── fetch_jira_issues.py
 │   │   └── integrations/    # External integrations
-│   │       └── jira.py
+│   │       ├── jira.py
+│   │       └── testrail.py
 │   ├── data/                # Sample data
 │   │   └── requirements/    # Sample requirement files
+│   │       ├── flight_booking.txt
+│   │       ├── login.txt
+│   │       ├── shopping_cart.txt
+│   │       └── signup.txt
 │   └── outputs/             # Generated outputs
+│       ├── quality_reports/  # Quality assessment outputs
+│       ├── temp/            # Temporary files
+│       └── testcase_generated/ # Generated test cases
 ├── build/                   # React production build
 ├── config/                  # Configuration storage
 ├── public/                  # Static assets
@@ -296,8 +327,10 @@ Built applications will be in the `dist/` directory:
 ### Common Issues
 
 1. **Python Not Found**
-   - Ensure Python 3.8+ is installed and in PATH
-   - Run `setup-windows.bat` to create virtual environment
+   - Windows: Ensure Python 3.8+ is installed and in PATH
+   - Mac: Install Python 3.8+ using `brew install python3` or from python.org
+   - Windows: Run `setup-windows.bat` to create virtual environment
+   - Mac: Run `./setup-mac.sh` to create virtual environment
    - Check that `backend/.venv` exists
 
 2. **Module Not Found Errors**
@@ -416,10 +449,11 @@ For support and questions:
 
 - AI-powered test execution
 - Advanced test case deduplication
+- Slack notifications
+- TestRail deeper integration
+- Multi-language support
 - Custom test templates
-- Priority based Test Cases generation
-- Design Technique based Test Cases generation
 
 ---
 
-**Built with ❤️ using Electron, React, Node, Material-UI, Python and AI**
+**Built with ❤️ using Electron, React, Material-UI, and AI**

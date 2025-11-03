@@ -13,9 +13,21 @@ let configDir, configPath;
 
 function getConfigPath() {
   if (isDev) {
-    // During development, store in project root
+    // During development, prefer project root but fallback to user directory if needed
     configDir = path.join(__dirname, '../../config');
     configPath = path.join(configDir, 'settings.json');
+    try {
+      if (!fsSync.existsSync(configDir)) {
+        fsSync.mkdirSync(configDir, { recursive: true });
+      }
+      const testFile = path.join(configDir, '.write-test');
+      fsSync.writeFileSync(testFile, 'test');
+      fsSync.unlinkSync(testFile);
+    } catch (error) {
+      console.log('⚠️ Cannot write to development config directory, using user data');
+      configDir = path.join(app.getPath('userData'), 'config');
+      configPath = path.join(configDir, 'settings.json');
+    }
   } else {
     // When packaged, try to store next to app executable
     const appDir = path.dirname(app.getPath('exe'));
@@ -56,42 +68,46 @@ function getPythonPath() {
   const pythonExecutable = isWindows ? 'python.exe' : 'python';
   const venvBinDir = isWindows ? 'Scripts' : 'bin';
   
-  // Always prioritize the virtual environment in the backend folder
-  const backendPath = getBackendPath();
-  const venvPath = path.join(backendPath, '.venv', venvBinDir, pythonExecutable);
-  
-  console.log('🔍 Checking venv Python path:', venvPath);
-  if (fsSync.existsSync(venvPath)) {
-    // Verify the virtual environment
-    try {
-      // Run a quick test to ensure the virtual environment is working
-      const testResult = require('child_process').spawnSync(venvPath, ['-c', 'import dotenv']);
-      if (testResult.status === 0) {
-        console.log('✅ Virtual environment verified:', venvPath);
-        return venvPath;
-      }
-      console.warn('⚠️  Virtual environment exists but python-dotenv test failed');
-    } catch (error) {
-      console.warn('⚠️  Virtual environment test failed:', error.message);
+  if (isDev) {
+    // Development: use venv from backend folder
+    const venvPython = path.join(__dirname, '../../backend/.venv', venvBinDir, pythonExecutable);
+    console.log('🔍 Checking dev Python path:', venvPython, 'exists:', fsSync.existsSync(venvPython));
+    if (fsSync.existsSync(venvPython)) {
+      return venvPython;
+    }
+  } else {
+    // Production: check multiple possible locations
+    const appDir = path.dirname(app.getPath('exe'));
+    
+    // Try relative to app executable
+    const venvPython1 = path.join(appDir, 'backend/.venv', venvBinDir, pythonExecutable);
+    console.log('🔍 Checking prod Python path 1:', venvPython1, 'exists:', fsSync.existsSync(venvPython1));
+    if (fsSync.existsSync(venvPython1)) {
+      return venvPython1;
     }
     
-    // If the test failed, try to repair the virtual environment
-    console.log('🔧 Attempting to repair virtual environment...');
-    try {
-      // Run setup-windows.bat to repair the environment
-      const setupScript = path.join(path.dirname(backendPath), 'setup-windows.bat');
-      if (fsSync.existsSync(setupScript)) {
-        require('child_process').spawnSync(setupScript, [], { stdio: 'inherit' });
-        console.log('✅ Virtual environment repaired');
-        return venvPath;
-      }
-    } catch (error) {
-      console.error('❌ Failed to repair virtual environment:', error.message);
+    // Try in Resources folder (Mac app bundle)
+    const venvPython2 = path.join(process.resourcesPath, 'backend/.venv', venvBinDir, pythonExecutable);
+    console.log('🔍 Checking prod Python path 2:', venvPython2, 'exists:', fsSync.existsSync(venvPython2));
+    if (fsSync.existsSync(venvPython2)) {
+      return venvPython2;
     }
   }
   
-  // If venv not found or repair failed, throw an error
-  throw new Error('Python virtual environment is not properly set up. Please run setup-windows.bat manually.');
+  // Fallback to system python
+  // Try user's PATH as last resort
+  const fallback = isWindows ? ['python', 'py'] : ['python3', 'python'];
+  for (const cmd of fallback) {
+    try {
+      require('child_process').spawnSync(cmd, ['--version']);
+      console.log('✅ Found Python in PATH:', cmd);
+      return cmd;
+    } catch (e) {
+      console.log(`❌ ${cmd} not found in PATH`);
+    }
+  }
+  console.log('⚠️ No Python found, using last fallback:', fallback[0]);
+  return fallback[0];
 }
 
 // Helper function to get backend path
@@ -116,6 +132,16 @@ function getBackendPath() {
     
     // Fallback to development path (shouldn't happen in production)
     return path.join(__dirname, '../../backend');
+  }
+}
+
+// Helper function to get the .env file path
+function getEnvFilePath() {
+  if (isDev) {
+    return path.join(__dirname, '../../backend/.env');
+  } else {
+    // In production, use writable location
+    return path.join(CONFIG_DIR, '../backend.env');
   }
 }
 
@@ -367,28 +393,12 @@ ipcMain.handle('enhance-requirement', async (event, requirementText, testCategor
         console.log('⚙️ Spawn args:', ['-m', 'src.agents.simple_requirement_enhancer', '--input', tempFile, '--category', testCategory, '--type', testType, '--enhancement-type', enhancementType]);
         console.log('📂 CWD:', backendPath);
         
-        // Set environment variables including OUTPUT_DIR and Python paths
-        const isWindows = process.platform === 'win32';
-        const venvPath = path.join(backendPath, '.venv');
-        const venvBinDir = isWindows ? 'Scripts' : 'bin';
-        const venvBinPath = path.join(venvPath, venvBinDir);
-        
-        // Prepare environment variables
+        // Set environment variables including OUTPUT_DIR
         const envVars = {
           ...process.env,
           OUTPUT_DIR: getOutputDir(),
-          DOTENV_PATH: getEnvFilePath(),
-          PYTHONPATH: backendPath,
-          // Add virtual environment paths to PATH
-          PATH: `${venvBinPath}${path.delimiter}${process.env.PATH}`,
-          VIRTUAL_ENV: venvPath
+          DOTENV_PATH: getEnvFilePath()
         };
-        
-        console.log('🔧 Environment setup:', {
-          PYTHONPATH: envVars.PYTHONPATH,
-          DOTENV_PATH: envVars.DOTENV_PATH,
-          VIRTUAL_ENV: envVars.VIRTUAL_ENV
-        });
         
         // Spawn Python process
         const pythonProcess = spawn(pythonPath, ['-m', 'src.agents.simple_requirement_enhancer', '--input', tempFile, '--category', testCategory, '--type', testType, '--enhancement-type', enhancementType], {
@@ -530,11 +540,11 @@ ipcMain.handle('generate-test-cases', async (event, requirementText, testType = 
         console.log('⚙️ Spawn args:', ['-m', 'src.agents.testcase_agent', '--input', tempFile, '--category', testCategory, '--type', testType]);
         console.log('📂 CWD:', backendPath);
         
-        // Set environment variables including configuration paths
+        // Set environment variables including OUTPUT_DIR
         const envVars = {
           ...process.env,
           OUTPUT_DIR: getOutputDir(),
-          CONFIG_PATH: CONFIG_PATH // Use settings.json path
+          DOTENV_PATH: getEnvFilePath()
         };
         
         // Spawn Python process
@@ -861,126 +871,11 @@ ipcMain.handle('test-llm-connection', async (event, testConfig) => {
     console.log('🐍 Python path:', pythonPath);
     console.log('📁 Backend path:', backendPath);
     
-    // Check Python environment
-    try {
-      // First, check if Python exists and get its version
-      const versionProcess = spawn(pythonPath, ['--version'], {
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      
-      const versionResult = await new Promise((resolve) => {
-        let stdout = '';
-        let stderr = '';
-        
-        versionProcess.stdout.on('data', (data) => stdout += data.toString());
-        versionProcess.stderr.on('data', (data) => stderr += data.toString());
-        
-        versionProcess.on('close', (code) => {
-          if (code === 0) {
-            resolve({ success: true, version: stdout.trim() });
-          } else {
-            resolve({ 
-              success: false, 
-              error: 'Python is not properly installed.\n\n' +
-                     'Please:\n' +
-                     '1. Install Python 3.8+ from https://www.python.org/downloads/\n' +
-                     '2. Check "Add Python to PATH" during installation\n' +
-                     '3. Run setup-windows.bat to complete the setup'
-            });
-          }
-        });
-      });
-      
-      if (!versionResult.success) {
-        return { success: false, message: versionResult.error };
-      }
-      
-      // Now check for required packages
-      const checkPackages = `
-import sys
-import json
-
-required = ['langchain', 'python-dotenv', 'requests', 'pandas', 'openpyxl']
-missing = []
-
-for package in required:
-    try:
-        __import__(package)
-    except ImportError:
-        missing.append(package)
-
-result = {
-    'success': len(missing) == 0,
-    'python_version': sys.version,
-    'missing_packages': missing
-}
-
-print(json.dumps(result))
-      `;
-      
-      const checkProcess = spawn(pythonPath, ['-c', checkPackages], {
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-
-      const checkResult = await new Promise((resolveCheck) => {
-        let stdout = '';
-        let stderr = '';
-
-        checkProcess.stdout.on('data', (data) => stdout += data.toString());
-        checkProcess.stderr.on('data', (data) => stderr += data.toString());
-
-        checkProcess.on('close', (code) => {
-          if (code === 0) {
-            try {
-              const result = JSON.parse(stdout.trim());
-              if (!result.success) {
-                result.error = `Missing required packages: ${result.missing_packages.join(', ')}\n\n` +
-                              'Please run setup-windows.bat to install all dependencies';
-              }
-              resolveCheck(result);
-            } catch (e) {
-              resolveCheck({ 
-                success: false, 
-                error: 'Failed to check Python packages. Please run setup-windows.bat to fix the environment.'
-              });
-            }
-          } else {
-            resolveCheck({ 
-              success: false, 
-              error: stderr || 'Python environment check failed.\n\nPlease run setup-windows.bat to fix the environment.'
-            });
-          }
-        });
-      });
-
-      if (!checkResult.success) {
-        return {
-          success: false,
-          message: `Python environment error: ${checkResult.error}`
-        };
-      }
-
-      if (checkResult.missing_packages && checkResult.missing_packages.length > 0) {
-        const missingList = checkResult.missing_packages.join(', ');
-        return {
-          success: false,
-          message: `Missing required Python packages: ${missingList}\n\nPlease run:\npip install ${missingList}`
-        };
-      }
-
-      // If using system Python without venv, show warning
-      if (!checkResult.is_venv && pythonPath === 'python' || pythonPath === 'python3') {
-        console.warn('⚠️ Using system Python without virtual environment');
-      }
-    } catch (error) {
+    // Check if Python exists
+    if (pythonPath !== 'python3' && !fsSync.existsSync(pythonPath)) {
       return {
         success: false,
-        message: 'Python is not properly installed or configured.\n\n' +
-                'Please ensure:\n' +
-                '1. Python 3.8 or higher is installed (https://www.python.org/downloads/)\n' +
-                '2. "Add Python to PATH" was checked during installation\n' +
-                '3. Run setup-windows.bat (Windows) or setup-macos.sh (Mac/Linux)\n\n' +
-                `Error details: ${error.message}`
+        message: 'Python interpreter not found. Please ensure Python is installed.'
       };
     }
     

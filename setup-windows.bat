@@ -5,11 +5,14 @@ echo ===================================
 echo Setting up Python environment for M+ TGen...
 echo ===================================
 
+echo [INFO] Script running from: %~dp0
+echo [INFO] This script will create a virtual environment in the backend folder
+
 REM Check if Python is installed and get version
 python --version > nul 2>&1
 if %errorlevel% neq 0 (
     echo [ERROR] Python is not installed or not in PATH
-    echo.
+    echo. 
     echo Please:
     echo 1. Install Python 3.8+ from https://www.python.org/downloads/
     echo 2. Make sure to check "Add Python to PATH" during installation

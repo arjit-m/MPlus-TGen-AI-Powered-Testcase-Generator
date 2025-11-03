@@ -1210,7 +1210,7 @@ ipcMain.handle('fetch-jira-sprint-issues', async (event, projectKey) => {
   
   return new Promise((resolve) => {
     try {
-      const pythonPath = path.join(__dirname, '../../backend/.venv/bin/python');
+      const pythonPath = getPythonPath();
       const scriptPath = path.join(__dirname, '../../backend/src/drivers/fetch_jira_issues.py');
       
       const args = ['--mode', 'sprint'];
@@ -1270,7 +1270,7 @@ ipcMain.handle('fetch-jira-issue', async (event, issueKey) => {
   
   return new Promise((resolve) => {
     try {
-      const pythonPath = path.join(__dirname, '../../backend/.venv/bin/python');
+      const pythonPath = getPythonPath();
       const scriptPath = path.join(__dirname, '../../backend/src/drivers/fetch_jira_issues.py');
       
       const args = ['--mode', 'issue', '--issue-key', issueKey];

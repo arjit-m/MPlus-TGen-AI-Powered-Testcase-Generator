@@ -1,7 +1,31 @@
 # M+ TGen TestCase Generator
 ## Release Notes
 
----
+
+## Version 2.5 - UI/UX & Integration Enhancements
+*Released: November 7, 2025*
+
+**🖼️ Branding & Appearance**
+- Updated application logo to custom image (React and Electron)
+- Moved logo asset to `src/assets` for build compatibility
+- AppBar styling: removed rounded corners for a modern look
+- Global scrollbars hidden for cleaner UI
+- Electron menu bar hidden for distraction-free experience
+
+**📋 JIRA Integration**
+- Added dividers between JIRA issues for improved readability
+
+**📊 DataGrid Improvements**
+- DataGrid pagination options restricted to [5, 10, 15, 20] rows per page
+- Default rows per page set to 5 for both Test Case and Quality Assessment tables
+- Enabled `autoHeight` so tables expand to fit content, eliminating unnecessary scrollbars
+
+**🐍 Backend & Platform Fixes**
+- Fixed Python path handling for Electron spawn (Windows compatibility)
+- Improved process management and cache clearing for reliable builds
+
+**📝 Documentation**
+- Release notes updated to reflect all major changes since v2.4
 
 ## Version 2.4 - Codebase Cleanup & Optimization
 *Released: November 1, 2025*

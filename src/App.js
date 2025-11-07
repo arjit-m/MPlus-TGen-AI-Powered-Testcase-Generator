@@ -611,9 +611,9 @@ function App() {
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* App Bar */}
-      <AppBar position="static" elevation={1}>
+      <AppBar position="static" elevation={1} sx={{ borderRadius: 0 }}>
         <Toolbar>
-          <RocketIcon sx={{ fontSize: 28, mr: 2 }} />
+          <MplusLogo size={32} sx={{ mr: 2 }} />
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" component="div" sx={{ lineHeight: 1.2 }}>
               M+ TGen

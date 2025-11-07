@@ -148,7 +148,7 @@ const WelcomeWizard = ({ open, onClose, onComplete }) => {
       case 0:
         return (
           <Box sx={{ textAlign: 'center', py: 1 }}>
-            <RocketIcon sx={{ fontSize: 60, color: 'primary.main', mb: 1.5 }} />
+            {/* <RocketIcon sx={{ fontSize: 60, color: 'primary.main', mb: 1.5 }} /> */}
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 0.5 }}>
               Welcome to M+ TGen!
             </Typography>

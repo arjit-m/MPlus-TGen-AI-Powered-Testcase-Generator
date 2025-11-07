@@ -236,7 +236,7 @@ const RequirementInput = ({
                   ) : (
                     <Box sx={{ p: 0.5 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        ✨ Enhance with AI
+                        Enhance with AI
                       </Typography>
                       <Typography variant="caption" component="div" sx={{ mb: 0.5 }}>
                         <strong>🧠 Improvise:</strong> Enhance clarity, add missing details, improve structure
@@ -271,7 +271,7 @@ const RequirementInput = ({
                       boxShadow: 2,
                     }}
                   >
-                    {isEnhancing ? 'Enhancing...' : '✨ Enhance'}
+                    {isEnhancing ? 'Enhancing...' : 'Enhance with AI'}
                   </Button>
                 </span>
               </Tooltip>

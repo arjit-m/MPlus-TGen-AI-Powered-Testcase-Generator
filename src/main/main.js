@@ -236,10 +236,14 @@ function createWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, '../../assets/icon.png'),
+    icon: path.join(__dirname, '../../src/assets/electron-replacement.png'),
     titleBarStyle: 'default',
-    show: false
+    show: false,
+    autoHideMenuBar: true // Hide the menu bar
   });
+
+  // Hide the menu bar completely
+  mainWindow.setMenuBarVisibility(false);
 
   // Load the app - always use build folder
   const startUrl = `file://${path.join(__dirname, '../../build/index.html')}`;

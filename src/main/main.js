@@ -1063,6 +1063,156 @@ except Exception as e:
   }
 });
 
+// Fetch available Ollama models
+ipcMain.handle('get-ollama-models', async (event, ollamaHost = 'http://localhost:11434') => {
+  try {
+    console.log('🔍 Fetching Ollama models from:', ollamaHost);
+    
+    const pythonPath = getPythonPath();
+    const backendPath = getBackendPath();
+    
+    if (pythonPath !== 'python3' && !fsSync.existsSync(pythonPath)) {
+      return {
+        success: false,
+        error: 'Python interpreter not found',
+        models: []
+      };
+    }
+    
+    return new Promise((resolve) => {
+      const fetchScript = `
+import sys
+import json
+
+try:
+    import requests
+    
+    ollama_host = "${ollamaHost}"
+    response = requests.get(f"{ollama_host}/api/tags", timeout=5)
+    
+    if response.status_code == 200:
+        data = response.json()
+        models = data.get('models', [])
+        
+        # Format models with name, size, and modified date
+        formatted_models = []
+        for m in models:
+            formatted_models.append({
+                'name': m.get('name', ''),
+                'size': m.get('size', 0),
+                'modified_at': m.get('modified_at', ''),
+                'digest': m.get('digest', ''),
+                'details': m.get('details', {})
+            })
+        
+        print(json.dumps({
+            'success': True,
+            'models': formatted_models
+        }))
+    else:
+        print(json.dumps({
+            'success': False,
+            'error': f'Ollama server returned status code {response.status_code}',
+            'models': []
+        }))
+        sys.exit(1)
+        
+except requests.exceptions.ConnectionError:
+    print(json.dumps({
+        'success': False,
+        'error': 'Cannot connect to Ollama server. Make sure Ollama is running.',
+        'models': []
+    }))
+    sys.exit(1)
+except requests.exceptions.Timeout:
+    print(json.dumps({
+        'success': False,
+        'error': 'Connection to Ollama server timed out.',
+        'models': []
+    }))
+    sys.exit(1)
+except Exception as e:
+    print(json.dumps({
+        'success': False,
+        'error': str(e),
+        'models': []
+    }))
+    sys.exit(1)
+`;
+      
+      const pythonProcess = spawn(pythonPath, ['-c', fetchScript], {
+        cwd: backendPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: {
+          PATH: process.env.PATH,
+          HOME: process.env.HOME
+        }
+      });
+      
+      let stdout = '';
+      let stderr = '';
+      
+      pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
+      pythonProcess.on('close', (code) => {
+        try {
+          if (stdout.trim()) {
+            const result = JSON.parse(stdout.trim());
+            console.log('✅ Fetched Ollama models:', result.models?.length || 0, 'models');
+            resolve(result);
+          } else {
+            console.error('❌ No output from Ollama model fetch');
+            resolve({
+              success: false,
+              error: 'No output from Ollama server',
+              models: []
+            });
+          }
+        } catch (error) {
+          console.error('❌ Error parsing Ollama models:', error);
+          resolve({
+            success: false,
+            error: `Failed to parse response: ${error.message}`,
+            models: []
+          });
+        }
+      });
+      
+      pythonProcess.on('error', (error) => {
+        console.error('❌ Python process error:', error);
+        resolve({
+          success: false,
+          error: `Failed to start Python: ${error.message}`,
+          models: []
+        });
+      });
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        pythonProcess.kill();
+        resolve({
+          success: false,
+          error: 'Request timed out after 10 seconds',
+          models: []
+        });
+      }, 10000);
+    });
+  } catch (error) {
+    console.error('❌ Get Ollama models error:', error);
+    return {
+      success: false,
+      error: error.message,
+      models: []
+    };
+  }
+});
+
 // Test JIRA connection
 ipcMain.handle('test-jira-connection', async (event, jiraConfig) => {
   try {

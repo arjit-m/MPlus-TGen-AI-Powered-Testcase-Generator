@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   testLLMConnection: (testConfig) => ipcRenderer.invoke('test-llm-connection', testConfig),
   testJiraConnection: (jiraConfig) => ipcRenderer.invoke('test-jira-connection', jiraConfig),
   checkFirstRun: () => ipcRenderer.invoke('check-first-run'),
+  getOllamaModels: (ollamaHost) => ipcRenderer.invoke('get-ollama-models', ollamaHost),
 
   // JIRA integration
   fetchJiraSprintIssues: (projectKey) => ipcRenderer.invoke('fetch-jira-sprint-issues', projectKey),

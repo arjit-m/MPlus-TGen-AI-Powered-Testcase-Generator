@@ -25,6 +25,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Settings as SettingsIcon,
   Rocket as RocketIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 
 const steps = ['Welcome', 'LLM Configuration', 'Finish'];
@@ -42,24 +43,87 @@ const WelcomeWizard = ({ open, onClose, onComplete }) => {
   const [errors, setErrors] = useState({});
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [ollamaModels, setOllamaModels] = useState([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState(null);
 
-  // Ensure model is set when provider changes or on mount
+  // Fetch Ollama models when provider is ollama or host changes
   useEffect(() => {
-    const defaultModels = {
-      openai: 'gpt-4o-mini',
-      anthropic: 'claude-3-sonnet',
-      google: 'gemini-1.5-pro',
-      ollama: 'mistral:latest'
-    };
+    if (config.provider === 'ollama') {
+      fetchOllamaModels();
+    } else {
+      // For non-ollama providers, set default model if not already set
+      const defaultModels = {
+        openai: 'gpt-4o-mini',
+        anthropic: 'claude-3-sonnet',
+        google: 'gemini-1.5-pro',
+      };
+      
+      if (!config.model || config.model === '' || config.model === 'mistral:latest') {
+        setConfig(prev => ({
+          ...prev,
+          model: defaultModels[prev.provider]
+        }));
+      }
+    }
+  }, [config.provider, config.ollamaHost]);
+
+  // Debug: log model changes
+  useEffect(() => {
+    console.log('📝 Current model state:', config.model);
+    console.log('📝 Current provider:', config.provider);
+    console.log('📝 Ollama models:', ollamaModels.map(m => m.name));
+  }, [config.model]);
+
+  const fetchOllamaModels = async () => {
+    console.log('🔍 Fetching Ollama models...');
+    setLoadingModels(true);
+    setModelsError(null);
     
-    // Only update if current model is empty or doesn't match provider
-    if (!config.model || config.model === '') {
+    try {
+      const result = await window.electronAPI.getOllamaModels(config.ollamaHost);
+      console.log('📦 Ollama models result:', result);
+      
+      if (result.success && result.models && result.models.length > 0) {
+        console.log('✅ Models found:', result.models.map(m => m.name));
+        setOllamaModels(result.models);
+        
+        // If current model is not in the list or is empty, set to first available model
+        const modelNames = result.models.map(m => m.name);
+        console.log('🔍 Current model:', config.model, '| Available:', modelNames);
+        
+        if (!config.model || !modelNames.includes(config.model)) {
+          const newModel = result.models[0].name;
+          console.log('🔄 Setting model to:', newModel);
+          setConfig(prev => ({
+            ...prev,
+            model: newModel
+          }));
+        }
+      } else {
+        console.log('⚠️ No models found');
+        setOllamaModels([]);
+        setModelsError(result.error || 'No models found. Run "ollama pull <model-name>" to download a model.');
+        // Set a default fallback model
+        setConfig(prev => ({
+          ...prev,
+          model: 'mistral:latest'
+        }));
+      }
+    } catch (error) {
+      console.error('❌ Error fetching models:', error);
+      setOllamaModels([]);
+      setModelsError(`Failed to fetch models: ${error.message}`);
+      // Set a default fallback model
       setConfig(prev => ({
         ...prev,
-        model: defaultModels[prev.provider]
+        model: 'mistral:latest'
       }));
+    } finally {
+      setLoadingModels(false);
+      console.log('✅ Fetch complete');
     }
-  }, [config.provider, config.model]);
+  };
 
   const handleNext = () => {
     if (activeStep === 1) {
@@ -256,9 +320,13 @@ const WelcomeWizard = ({ open, onClose, onComplete }) => {
             <FormControl fullWidth sx={{ mb: 3 }}>
               <InputLabel>Model</InputLabel>
               <Select
-                value={config.model}
+                value={config.model || ''}
                 label="Model"
-                onChange={(e) => setConfig({ ...config, model: e.target.value })}
+                onChange={(e) => {
+                  console.log('Model selected:', e.target.value);
+                  setConfig({ ...config, model: e.target.value });
+                }}
+                disabled={config.provider === 'ollama' && loadingModels}
               >
                 {config.provider === 'openai' && (
                   <MenuItem value="gpt-4o-mini">GPT-4o Mini (Fast and cost-effective)</MenuItem>
@@ -270,9 +338,40 @@ const WelcomeWizard = ({ open, onClose, onComplete }) => {
                   <MenuItem value="gemini-1.5-pro">Gemini 1.5 Pro (Most capable)</MenuItem>
                 )}
                 {config.provider === 'ollama' && (
-                  <MenuItem value="mistral:latest">Mistral Latest (Good general purpose)</MenuItem>
+                  <>
+                    {loadingModels ? (
+                      <MenuItem value={config.model || 'loading'} disabled>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          <span>Loading models...</span>
+                        </Box>
+                      </MenuItem>
+                    ) : ollamaModels.length > 0 ? (
+                      ollamaModels.map((model) => (
+                        <MenuItem key={model.name} value={model.name}>
+                          {model.name}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="mistral:latest">
+                        mistral:latest (Default - needs to be pulled)
+                      </MenuItem>
+                    )}
+                  </>
                 )}
               </Select>
+              <FormHelperText>
+                {config.provider === 'ollama' && modelsError && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    {modelsError}
+                  </Alert>
+                )}
+                {config.provider === 'ollama' && !loadingModels && ollamaModels.length === 0 && !modelsError && (
+                  <Typography variant="caption" color="text.secondary">
+                    No models found. Run "ollama pull mistral" to download a model.
+                  </Typography>
+                )}
+              </FormHelperText>
             </FormControl>
 
             {config.provider === 'openai' && (
@@ -340,6 +439,20 @@ const WelcomeWizard = ({ open, onClose, onComplete }) => {
                 helperText={errors.ollamaHost || 'Default: http://localhost:11434'}
                 sx={{ mb: 2 }}
               />
+            )}
+
+            {config.provider === 'ollama' && (
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={fetchOllamaModels}
+                  disabled={loadingModels}
+                  startIcon={loadingModels ? <CircularProgress size={20} /> : <RefreshIcon />}
+                  fullWidth
+                >
+                  {loadingModels ? 'Fetching Models...' : 'Refresh Models'}
+                </Button>
+              </Box>
             )}
 
             <Box sx={{ mt: 3, display: 'flex', gap: 2, alignItems: 'center' }}>

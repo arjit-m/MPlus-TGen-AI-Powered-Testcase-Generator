@@ -18,7 +18,8 @@
     "dist:win": "npm run react:build && electron-builder --win --publish=never",
     "dist:all": "npm run react:build && electron-builder --mac --win --publish=never",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "tgen": "npm run react:build && npm start"
   },
   "keywords": [
     "testcase",

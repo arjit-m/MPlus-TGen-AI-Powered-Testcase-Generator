@@ -18,6 +18,7 @@ import {
   Tooltip,
   Chip,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -63,27 +64,83 @@ const ConfigurationPage = ({ onClose, onSave }) => {
   const [saveStatus, setSaveStatus] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState({});
   const [connectionError, setConnectionError] = useState({});
+  const [ollamaModels, setOllamaModels] = useState([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState(null);
+  const [ollamaModelOptions, setOllamaModelOptions] = useState([]);
 
   // Model options for each provider - based on .env file examples
-  const modelOptions = {
-    ollama: [
-      { value: 'mistral:latest', label: 'Mistral Latest', description: 'Good general purpose model' }
-    ],
-    openai: [
-      { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fast and cost-effective' }
-    ],
-    anthropic: [
-      { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Latest and most capable' },
-    ],
-    google: [
-      { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Most capable Gemini model' },
-    ],
+  const getModelOptions = (provider) => {
+    if (provider === 'ollama') {
+      return ollamaModelOptions;
+    }
+    
+    const staticOptions = {
+      openai: [
+        { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fast and cost-effective' }
+      ],
+      anthropic: [
+        { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Latest and most capable' },
+      ],
+      google: [
+        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Most capable Gemini model' },
+      ],
+    };
+    
+    return staticOptions[provider] || [];
   };
 
   // Load configuration on component mount
   useEffect(() => {
     loadConfiguration();
   }, []);
+
+  // Fetch Ollama models when provider is ollama
+  useEffect(() => {
+    if (config.provider === 'ollama') {
+      fetchOllamaModels();
+    }
+  }, [config.provider, config.ollamaHost]);
+
+  const fetchOllamaModels = async () => {
+    setLoadingModels(true);
+    setModelsError(null);
+    
+    try {
+      const result = await window.electronAPI.getOllamaModels(config.ollamaHost);
+      
+      if (result.success && result.models && result.models.length > 0) {
+        setOllamaModels(result.models);
+        
+        // Update modelOptions dynamically using state
+        const formattedOptions = result.models.map(m => ({
+          value: m.name,
+          label: m.name,
+          description: `Size: ${(m.size / 1024 / 1024 / 1024).toFixed(2)} GB`
+        }));
+        setOllamaModelOptions(formattedOptions);
+        
+        // If current model is not in the list, set to first available model
+        const modelNames = result.models.map(m => m.name);
+        if (!modelNames.includes(config.model)) {
+          setConfig(prev => ({
+            ...prev,
+            model: result.models[0].name
+          }));
+        }
+      } else {
+        setOllamaModels([]);
+        setOllamaModelOptions([]);
+        setModelsError(result.error || 'No models found. Run "ollama pull <model-name>" to download a model.');
+      }
+    } catch (error) {
+      setOllamaModels([]);
+      setOllamaModelOptions([]);
+      setModelsError(`Failed to fetch models: ${error.message}`);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
 
   const loadConfiguration = async () => {
     try {
@@ -100,8 +157,8 @@ const ConfigurationPage = ({ onClose, onSave }) => {
         };
         
         // Check if the current model is valid for the selected provider
-        const validModels = modelOptions[loadedConfig.provider]?.map(m => m.value) || [];
-        if (!validModels.includes(loadedConfig.model)) {
+        const validModels = getModelOptions(loadedConfig.provider).map(m => m.value) || [];
+        if (validModels.length > 0 && !validModels.includes(loadedConfig.model)) {
           // Model doesn't match provider, use default for this provider
           loadedConfig.model = defaultModels[loadedConfig.provider];
         }
@@ -394,11 +451,44 @@ const ConfigurationPage = ({ onClose, onSave }) => {
         {/* Model Selection */}
         <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
           <FormLabel component="legend">Select Model</FormLabel>
+          
+          {config.provider === 'ollama' && loadingModels && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
+              <CircularProgress size={20} />
+              <Typography variant="body2">Loading available models...</Typography>
+            </Box>
+          )}
+          
+          {config.provider === 'ollama' && !loadingModels && modelsError && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {modelsError}
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={fetchOllamaModels}
+                  startIcon={<RefreshIcon />}
+                >
+                  Retry
+                </Button>
+              </Box>
+            </Alert>
+          )}
+          
+          {config.provider === 'ollama' && !loadingModels && ollamaModels.length === 0 && !modelsError && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              No models found. Please pull a model first:
+              <Box sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.9em' }}>
+                ollama pull mistral
+              </Box>
+            </Alert>
+          )}
+          
           <RadioGroup
             value={config.model}
             onChange={(e) => handleConfigChange('model', e.target.value)}
           >
-            {modelOptions[config.provider]?.map((model) => (
+            {getModelOptions(config.provider)?.map((model) => (
               <Box key={model.value} sx={{ mb: 1 }}>
                 <FormControlLabel 
                   value={model.value} 
@@ -415,6 +505,20 @@ const ConfigurationPage = ({ onClose, onSave }) => {
               </Box>
             ))}
           </RadioGroup>
+          
+          {config.provider === 'ollama' && ollamaModels.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={fetchOllamaModels}
+                disabled={loadingModels}
+                startIcon={loadingModels ? <CircularProgress size={16} /> : <RefreshIcon />}
+              >
+                Refresh Models
+              </Button>
+            </Box>
+          )}
         </FormControl>
 
         {/* Custom Model Input for Ollama */}

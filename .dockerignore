@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build output
+build/
+dist/
+
+# Electron
+.webpack/
+out/
+
+# Python
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+backend/outputs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Config (will be managed via environment)
+config/settings.json
+backend/.env

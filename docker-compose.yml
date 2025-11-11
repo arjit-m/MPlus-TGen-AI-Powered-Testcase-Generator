@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Backend Python service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mplus-tgen-backend
+    volumes:
+      - ./backend:/app
+      - backend-outputs:/app/outputs
+    environment:
+      # LLM Provider Configuration
+      - PROVIDER=${PROVIDER:-ollama}
+      - MODEL=${MODEL:-mistral:latest}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      
+      # JIRA Configuration
+      - JIRA_BASE=${JIRA_BASE:-http://localhost:4001}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_BEARER=${JIRA_BEARER:-}
+      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY:-QA}
+      
+      # Python configuration
+      - PYTHONUNBUFFERED=1
+      - LLM_LOG=1
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    networks:
+      - tgen-network
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  # Ollama service for local LLM (optional but recommended for free usage)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mplus-tgen-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - tgen-network
+    restart: unless-stopped
+    # Uncomment below if you have NVIDIA GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  backend-outputs:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  tgen-network:
+    driver: bridge

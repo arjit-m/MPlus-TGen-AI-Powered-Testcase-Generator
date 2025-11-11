@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test outputs (will be mounted as volumes)
+outputs/testcase_generated/*
+outputs/quality_reports/*
+outputs/temp/*
+
+# Keep structure files
+!outputs/testcase_generated/.gitkeep
+!outputs/quality_reports/.gitkeep
+!outputs/temp/.gitkeep

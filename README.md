@@ -4,7 +4,67 @@ An Electron-based desktop application for AI-powered test case generation with J
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🐳 Docker Setup (Recommended - Easiest Way!)
+
+**Prerequisites:**
+- Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop/))
+- 4GB+ RAM allocated to Docker
+
+**Quick Start:**
+
+For Mac/Linux:
+```bash
+./docker-start.sh
+```
+
+For Windows:
+```cmd
+docker-start.bat
+```
+
+That's it! The script will:
+- ✅ Check Docker installation
+- ✅ Create configuration file
+- ✅ Pull required images
+- ✅ Start backend and Ollama services
+- ✅ Download Mistral model (free local LLM)
+
+Then run the Electron app:
+```bash
+npm install  # First time only
+npm run electron:dev
+```
+
+**Docker Benefits:**
+- ✅ No Python installation needed
+- ✅ No dependency management hassles
+- ✅ Includes free local LLM (Ollama)
+- ✅ Works identically on all platforms
+- ✅ Easy to share and deploy
+
+**Docker Commands:**
+```bash
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Restart services
+docker-compose restart
+
+# Rebuild after changes
+docker-compose up -d --build
+
+# Pull a different Ollama model
+docker exec mplus-tgen-ollama ollama pull llama2
+```
+
+---
+
+### 📦 Traditional Setup (Alternative)
+
+**Prerequisites:**
 
 1. **Python 3.8+** - [Download here](https://www.python.org/downloads/)
    - ⚠️ **Windows users**: Check "Add Python to PATH" during installation!
@@ -138,6 +198,105 @@ npm run dist:all
 
 The built application will be available in the `dist/` directory.
 
+## 🐳 Docker Configuration
+
+### Environment Variables
+
+Configure the application by editing `.env` file (created automatically from `.env.docker`):
+
+```bash
+# LLM Provider (ollama, openai, anthropic, google)
+PROVIDER=ollama
+MODEL=mistral:latest
+
+# API Keys (for cloud providers)
+OPENAI_API_KEY=your-key-here
+ANTHROPIC_API_KEY=your-key-here
+GOOGLE_API_KEY=your-key-here
+
+# Ollama Configuration
+OLLAMA_HOST=http://ollama:11434
+
+# JIRA Integration
+JIRA_BASE=https://your-company.atlassian.net
+JIRA_EMAIL=your-email@company.com
+JIRA_BEARER=your-jira-token
+JIRA_PROJECT_KEY=QA
+```
+
+### Docker Services
+
+The `docker-compose.yml` includes:
+
+1. **Backend Service** (`mplus-tgen-backend`)
+   - Python backend with all dependencies
+   - Mounts local code for development
+   - Persistent volume for outputs
+   - Port: 5000
+
+2. **Ollama Service** (`mplus-tgen-ollama`)
+   - Free local LLM server
+   - Persistent model storage
+   - Port: 11434
+   - Optional GPU support
+
+### Using Different LLM Models
+
+**With Ollama (Local & Free):**
+```bash
+# List available models
+docker exec mplus-tgen-ollama ollama list
+
+# Pull a new model
+docker exec mplus-tgen-ollama ollama pull llama2
+docker exec mplus-tgen-ollama ollama pull codellama
+docker exec mplus-tgen-ollama ollama pull deepseek-coder
+
+# Then update your .env file
+PROVIDER=ollama
+MODEL=llama2:latest
+```
+
+**With Cloud Providers:**
+```bash
+# Edit .env file
+PROVIDER=openai
+MODEL=gpt-4o-mini
+OPENAI_API_KEY=sk-your-key-here
+
+# Restart services
+docker-compose restart
+```
+
+### Troubleshooting Docker
+
+**Services won't start:**
+```bash
+# Check logs
+docker-compose logs backend
+docker-compose logs ollama
+
+# Rebuild containers
+docker-compose down
+docker-compose up -d --build
+```
+
+**Out of disk space:**
+```bash
+# Clean up unused Docker resources
+docker system prune -a
+```
+
+**Ollama model download fails:**
+```bash
+# Increase Docker memory allocation in Docker Desktop settings
+# Recommended: 4GB+ RAM
+
+# Or pull model manually
+docker exec -it mplus-tgen-ollama /bin/bash
+ollama pull mistral
+```
+
 ## 🏗️ Architecture
 
 ### Frontend (React)
@@ -163,8 +322,13 @@ The built application will be available in the `dist/` directory.
 ```
 AI-Test-Case-Generator/
 ├── package.json              # Dependencies and scripts
-├── setup-windows.bat         # Windows setup script
-├── setup-mac.sh             # Mac setup script
+├── docker-compose.yml        # Docker services configuration
+├── docker-start.sh           # Docker startup script (Mac/Linux)
+├── docker-start.bat          # Docker startup script (Windows)
+├── .env.docker               # Docker environment template
+├── .dockerignore             # Docker build exclusions
+├── setup-windows.bat         # Traditional setup script (Windows)
+├── setup-mac.sh             # Traditional setup script (Mac)
 ├── src/
 │   ├── main/                # Electron main process
 │   │   ├── main.js          # Main Electron process & IPC handlers
@@ -187,6 +351,8 @@ AI-Test-Case-Generator/
 │   ├── App.js               # Main React application
 │   └── index.js             # React entry point
 ├── backend/                 # Python backend
+│   ├── Dockerfile           # Backend Docker image
+│   ├── .dockerignore        # Backend build exclusions
 │   ├── requirements.txt     # Python dependencies
 │   ├── src/
 │   │   ├── agents/          # AI agents

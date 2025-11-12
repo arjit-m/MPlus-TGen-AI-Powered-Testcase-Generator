@@ -43,6 +43,7 @@ function App() {
   const [requirementFile, setRequirementFile] = useState(null);
   const [testCategory, setTestCategory] = useState('functional'); // Default to functional
   const [testType, setTestType] = useState('smoke'); // Default to smoke
+  const [testCaseCount, setTestCaseCount] = useState('ai'); // Default to AI decide
   const [generatedCases, setGeneratedCases] = useState([]);
   const [qualityReport, setQualityReport] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -324,9 +325,10 @@ function App() {
         requirementTextLength: requirementText.length,
         requirementTextPreview: requirementText.substring(0, 100) + '...', 
         testType,
-        testCategory
+        testCategory,
+        testCaseCount
       });
-      const result = await window.electronAPI.generateTestCases(requirementText, testType, testCategory);
+      const result = await window.electronAPI.generateTestCases(requirementText, testType, testCategory, testCaseCount);
       console.log('📤 Received result from IPC:', {
         success: result?.success,
         errorMessage: result?.error,
@@ -689,6 +691,8 @@ function App() {
               }}
               requirementFile={requirementFile}
               onFileSelect={handleFileSelect}
+              testCaseCount={testCaseCount}
+              onTestCaseCountChange={setTestCaseCount}
               onLoadExample={() => {
                 // Load example requirement
                 const examples = [

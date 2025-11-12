@@ -14,6 +14,9 @@ import {
   ListItemText,
   Tooltip,
   CircularProgress,
+  FormControl,
+  Select,
+  InputLabel,
 } from '@mui/material';
 import {
   FolderOpen as FolderOpenIcon,
@@ -104,7 +107,9 @@ const RequirementInput = ({
   onClear,
   onEnhanceRequirement,
   isEnhancing,
-  llmConfigStatus = { isConfigured: true, message: '', provider: '' }
+  llmConfigStatus = { isConfigured: true, message: '', provider: '' },
+  testCaseCount,
+  onTestCaseCountChange
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const enhanceMenuOpen = Boolean(anchorEl);
@@ -381,6 +386,34 @@ Focus on clear, testable requirements."
             variant="outlined"
           />
         )}
+      </Box>
+
+      {/* Test Case Count Selection */}
+      <Box sx={{ mt: 2 }}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="test-case-count-label">Number of Test Cases</InputLabel>
+          <Select
+            labelId="test-case-count-label"
+            id="test-case-count-select"
+            value={testCaseCount || 'ai'}
+            label="Number of Test Cases"
+            onChange={(e) => onTestCaseCountChange(e.target.value)}
+          >
+            <MenuItem value="ai">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography>🤖 Let AI Decide</Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="5">5 Test Cases</MenuItem>
+            <MenuItem value="10">10 Test Cases</MenuItem>
+            <MenuItem value="15">15 Test Cases</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+          {testCaseCount === 'ai' || !testCaseCount 
+            ? 'AI will determine optimal number based on requirement complexity'
+            : `Generate exactly ${testCaseCount} test cases`}
+        </Typography>
       </Box>
     </Box>
   );

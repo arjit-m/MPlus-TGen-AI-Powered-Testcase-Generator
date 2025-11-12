@@ -10,8 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDefaultRequirements: () => ipcRenderer.invoke('get-default-requirements'),
 
   // Test case generation
-  generateTestCases: (requirementText, testType, testCategory) => 
-    ipcRenderer.invoke('generate-test-cases', requirementText, testType, testCategory),
+  generateTestCases: (requirementText, testType, testCategory, testCaseCount) => 
+    ipcRenderer.invoke('generate-test-cases', requirementText, testType, testCategory, testCaseCount),
   
   // Requirement enhancement
   enhanceRequirement: (requirementText, testCategory, testType, enhancementType) =>

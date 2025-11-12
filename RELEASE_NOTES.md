@@ -2,6 +2,26 @@
 ## Release Notes
 
 
+## Version 2.6 - Priority Enhancement & Test Case Count Control
+*Released: November 12, 2025*
+
+**🎯 Intelligent Priority Assignment**
+- **Multi-Factor Scoring System**: Automatic priority enhancement using:
+  - Keyword analysis (50%): Detects security, payment, authentication, UI, cosmetic keywords
+  - Test type multipliers (30%): Smoke (1.3x), Sanity (1.2x), API (1.15x), Unit (1.0x)
+  - LLM suggestions (20%): AI-recommended priorities
+- **3-Level System**: Simplified to High/Medium/Low (removed Critical tier)
+- **Score Thresholds**: High ≥6.5, Medium ≥3.5, Low <3.5
+- **Automatic**: All test cases enhanced with intelligent scoring and confidence metrics
+
+**📊 Test Case Count Control**
+- **Dropdown Selector**: Choose test case count before generation
+  - 🤖 Let AI Decide (default)
+  - 5, 10, or 15 test cases
+- **Exact Generation**: LLM receives explicit count instructions
+- **Full Integration**: Frontend selector → IPC → Backend → LLM prompts
+---
+
 ## Version 2.5 - UI/UX & Integration Enhancements
 *Released: November 7, 2025*
 
@@ -265,8 +285,8 @@
 
 ## Summary
 
-**Current Version:** 2.3.0 - First-Run Experience & Polish  
-**Key Features:** Welcome Wizard with test connection, rocket branding, optimized onboarding, JIRA integration, dual AI enhancement modes, quality scoring  
+**Current Version:** 2.6.0 - Priority Enhancement & Test Case Count Control  
+**Key Features:** Intelligent 3-level priority system with multi-factor scoring, user-controlled test case count (5/10/15 or AI decide), welcome wizard, JIRA integration, dual AI enhancement modes, quality scoring  
 **Platform:** Cross-platform desktop app (Windows, macOS, Linux)  
 **Requirements:** Node.js (bundled Python included)
 

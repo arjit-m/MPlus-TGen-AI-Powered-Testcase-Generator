@@ -14,6 +14,13 @@ test cases using this schema:
 
 Test Type Context: {test_context}
 
+Test Case Count: {count_instruction}
+
+Priority Assignment Guidelines:
+- **High**: Security vulnerabilities, payment/transaction flows, data loss scenarios, authentication/authorization, system crashes, core functionality failures, critical path validation
+- **Medium**: UI features, filtering/sorting, settings/preferences, optional validations, non-critical workflows, standard CRUD operations
+- **Low**: Cosmetic changes, informational displays, optional enhancements, help text, tooltips, visual styling
+
 Rules:
 - Return JSON ONLY (no prose, no fences).
 - Generate test cases specifically for {test_category} {test_type} testing.
@@ -21,3 +28,5 @@ Rules:
 - Follow the specific testing approach for the given test type.
 - Cover appropriate scenarios based on the test type context.
 - Ensure test cases are thorough and well-structured.
+- Assign priority based on business impact and risk level.
+- IMPORTANT: {count_instruction}

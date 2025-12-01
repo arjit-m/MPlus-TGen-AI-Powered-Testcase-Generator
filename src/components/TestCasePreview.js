@@ -265,19 +265,21 @@ const TestCasePreview = ({ testCases, qualityReport }) => {
 
       {/* Data Grid */}
       <Box sx={{ 
-        height: 'calc(100vh - 400px)', 
-        minHeight: 400, 
-        maxHeight: 800,
         width: '100%' 
       }}>
         <DataGrid
           rows={testCases}
           columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[5, 10, 25, 50, 100]}
+          initialState={{
+            pagination: {
+              paginationModel: { pageSize: 5 },
+            },
+          }}
+          pageSizeOptions={[5, 10, 15, 20]}
           checkboxSelection={false}
           disableSelectionOnClick
           onRowDoubleClick={handleRowDoubleClick}
+          autoHeight
           getRowHeight={() => 'auto'}
           sx={{
             '& .MuiDataGrid-cell': {

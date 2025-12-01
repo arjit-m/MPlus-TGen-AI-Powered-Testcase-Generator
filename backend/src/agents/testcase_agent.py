@@ -17,6 +17,7 @@ import argparse
 from src.core import chat, pick_requirement, parse_json_safely, to_rows, write_csv
 from langchain_core.prompts import PromptTemplate
 from src.core.quality_scorer import TestCaseQualityScorer
+from src.core.priority_enhancer import enhance_test_case_priorities
 import re
 
 # The functions imported from `src.core` are small, dependency-free helpers
@@ -182,6 +183,7 @@ def main(argv: Optional[list] = None) -> None:
     parser.add_argument("--input", help="Path to a requirement .txt file")
     parser.add_argument("--category", default="functional", choices=["functional", "non-functional"], help="Test category")
     parser.add_argument("--type", default="smoke", choices=["smoke", "sanity", "unit", "api"], help="Test type")
+    parser.add_argument("--count", type=int, help="Number of test cases to generate (optional, AI decides if not specified)")
     args = parser.parse_args(argv)
 
     # Configure logging for the process (simple default; agents may override)
@@ -198,11 +200,18 @@ def main(argv: Optional[list] = None) -> None:
     # Generate context and focus based on test category and type
     test_context, test_focus = get_test_context(args.category, args.type)
     
-    # Format the system prompt with test context
+    # Determine test case count instruction
+    if args.count:
+        count_instruction = f"Generate EXACTLY {args.count} test cases. This is a strict requirement."
+    else:
+        count_instruction = "Determine the optimal number of test cases based on requirement complexity."
+    
+    # Format the system prompt with test context and count instruction
     formatted_system_prompt = SYSTEM_PROMPT.format(
         test_context=test_context,
         test_category=args.category.title(),
-        test_type=format_test_type(args.type)
+        test_type=format_test_type(args.type),
+        count_instruction=count_instruction
     )
     
     # Format the user prompt with test details
@@ -210,7 +219,8 @@ def main(argv: Optional[list] = None) -> None:
         test_category=args.category.title(),
         test_type=format_test_type(args.type),
         requirement_text=requirement_text,
-        test_focus=test_focus
+        test_focus=test_focus,
+        count_instruction=count_instruction
     )
 
     messages: List[Message] = [
@@ -250,6 +260,14 @@ def main(argv: Optional[list] = None) -> None:
             raise RuntimeError(
                 f"Could not parse model output as JSON. See {LAST_RAW_JSON}.\nError: {e}"
             )
+
+    # --- Enhance Priorities ---
+    logger.info("🎯 Enhancing test case priorities with intelligent scoring")
+    try:
+        cases = enhance_test_case_priorities(cases, requirement_text, args.type)
+        logger.info("✅ Priority enhancement complete")
+    except Exception as e:
+        logger.warning("⚠️  Priority enhancement failed, using LLM priorities: %s", e)
 
     rows = to_rows(cases, args.category, args.type)
     write_csv(rows, OUT_CSV)

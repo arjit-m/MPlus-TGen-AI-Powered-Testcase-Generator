@@ -271,46 +271,49 @@ const JiraIntegration = ({ onRequirementLoad, projectKey }) => {
                   borderColor: 'divider',
                   borderRadius: 1,
                 }}>
-                  {sprintIssues.map((issue) => (
-                    <ListItem key={issue.key} disablePadding>
-                      <ListItemButton onClick={() => loadIssueToRequirement(issue)}>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Chip 
-                                label={issue.key} 
-                                size="small" 
-                                color="primary"
-                                variant="outlined"
-                              />
-                              <Typography variant="body1">{issue.summary}</Typography>
-                            </Box>
-                          }
-                          secondary={
-                            <Stack direction="row" spacing={1} mt={0.5}>
-                              {issue.type && (
-                                <Chip label={issue.type} size="small" variant="outlined" />
-                              )}
-                              {issue.priority && (
+                  {sprintIssues.map((issue, index) => (
+                    <React.Fragment key={issue.key}>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => loadIssueToRequirement(issue)}>
+                          <ListItemText
+                            primary={
+                              <Box display="flex" alignItems="center" gap={1}>
                                 <Chip 
-                                  label={issue.priority} 
+                                  label={issue.key} 
                                   size="small" 
-                                  color={
-                                    issue.priority === 'High' ? 'error' : 
-                                    issue.priority === 'Medium' ? 'warning' : 
-                                    'default'
-                                  }
+                                  color="primary"
                                   variant="outlined"
                                 />
-                              )}
-                              {issue.status && (
-                                <Chip label={issue.status} size="small" />
-                              )}
-                            </Stack>
-                          }
-                        />
-                      </ListItemButton>
-                    </ListItem>
+                                <Typography variant="body1">{issue.summary}</Typography>
+                              </Box>
+                            }
+                            secondary={
+                              <Stack direction="row" spacing={1} mt={0.5}>
+                                {issue.type && (
+                                  <Chip label={issue.type} size="small" variant="outlined" />
+                                )}
+                                {issue.priority && (
+                                  <Chip 
+                                    label={issue.priority} 
+                                    size="small" 
+                                    color={
+                                      issue.priority === 'High' ? 'error' : 
+                                      issue.priority === 'Medium' ? 'warning' : 
+                                      'default'
+                                    }
+                                    variant="outlined"
+                                  />
+                                )}
+                                {issue.status && (
+                                  <Chip label={issue.status} size="small" />
+                                )}
+                              </Stack>
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                      {index < sprintIssues.length - 1 && <Divider />}
+                    </React.Fragment>
                   ))}
                 </List>
               )}

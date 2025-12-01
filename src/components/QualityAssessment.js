@@ -354,15 +354,20 @@ const QualityAssessment = ({ qualityReport }) => {
 
             {/* Detailed Scores Tab */}
             {activeTab === 1 && (
-              <Box sx={{ mt: 3, height: 400 }}>
+              <Box sx={{ mt: 3 }}>
                 <DataGrid
                   rows={individualScores}
                   columns={columns}
-                  pageSize={10}
-                  rowsPerPageOptions={[5, 10, 25]}
+                  initialState={{
+                    pagination: {
+                      paginationModel: { pageSize: 5 },
+                    },
+                  }}
+                  pageSizeOptions={[5, 10, 15, 20]}
                   checkboxSelection={false}
                   disableSelectionOnClick
                   getRowId={(row) => row.test_id}
+                  autoHeight
                   sx={{
                     '& .MuiDataGrid-cell': {
                       borderBottom: '1px solid rgba(224, 224, 224, 1)',

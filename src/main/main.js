@@ -236,10 +236,14 @@ function createWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, '../../assets/icon.png'),
+    icon: path.join(__dirname, '../../src/assets/electron-replacement.png'),
     titleBarStyle: 'default',
-    show: false
+    show: false,
+    autoHideMenuBar: true // Hide the menu bar
   });
+
+  // Hide the menu bar completely
+  mainWindow.setMenuBarVisibility(false);
 
   // Load the app - always use build folder
   const startUrl = `file://${path.join(__dirname, '../../build/index.html')}`;
@@ -514,11 +518,12 @@ ipcMain.handle('enhance-requirement', async (event, requirementText, testCategor
 });
 
 // Generate test cases by calling Python backend
-ipcMain.handle('generate-test-cases', async (event, requirementText, testType = 'smoke', testCategory = 'functional') => {
+ipcMain.handle('generate-test-cases', async (event, requirementText, testType = 'smoke', testCategory = 'functional', testCaseCount = 'ai') => {
   console.log('🚀 IPC: generate-test-cases called with:', { 
     requirementLength: requirementText.length, 
     testType,
     testCategory,
+    testCaseCount,
     firstChars: requirementText.substring(0, 100)
   });
   
@@ -537,7 +542,14 @@ ipcMain.handle('generate-test-cases', async (event, requirementText, testType = 
       // Write temporary requirement file
       fs.writeFile(tempFile, requirementText, 'utf-8').then(() => {
         console.log('📁 Temp file created:', tempFile);
-        console.log('⚙️ Spawn args:', ['-m', 'src.agents.testcase_agent', '--input', tempFile, '--category', testCategory, '--type', testType]);
+        
+        // Build command args with test case count
+        const args = ['-m', 'src.agents.testcase_agent', '--input', tempFile, '--category', testCategory, '--type', testType];
+        if (testCaseCount && testCaseCount !== 'ai') {
+          args.push('--count', testCaseCount);
+        }
+        
+        console.log('⚙️ Spawn args:', args);
         console.log('📂 CWD:', backendPath);
         
         // Set environment variables including OUTPUT_DIR
@@ -548,7 +560,7 @@ ipcMain.handle('generate-test-cases', async (event, requirementText, testType = 
         };
         
         // Spawn Python process
-        const pythonProcess = spawn(pythonPath, ['-m', 'src.agents.testcase_agent', '--input', tempFile, '--category', testCategory, '--type', testType], {
+        const pythonProcess = spawn(pythonPath, args, {
           cwd: backendPath,
           stdio: ['pipe', 'pipe', 'pipe'],
           env: envVars

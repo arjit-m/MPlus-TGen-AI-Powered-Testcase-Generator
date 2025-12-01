@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { GlobalStyles } from '@mui/material';
 import App from './App';
 
 const theme = createTheme({
@@ -50,6 +51,19 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <GlobalStyles
+        styles={{
+          /* Hide scrollbar for Chrome, Safari and Opera */
+          '*::-webkit-scrollbar': {
+            display: 'none',
+          },
+          /* Hide scrollbar for IE, Edge and Firefox */
+          '*': {
+            '-ms-overflow-style': 'none',  /* IE and Edge */
+            'scrollbar-width': 'none',  /* Firefox */
+          },
+        }}
+      />
       <App />
     </ThemeProvider>
   </React.StrictMode>

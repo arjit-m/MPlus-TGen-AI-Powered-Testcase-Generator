@@ -5,3 +5,5 @@ Requirement:
 """{requirement_text}"""
 
 Generate {test_type} test cases that focus on {test_focus}.
+
+IMPORTANT: {count_instruction}

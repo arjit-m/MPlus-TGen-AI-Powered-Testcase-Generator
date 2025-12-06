@@ -215,11 +215,11 @@ async function loadConfig() {
     googleApiKey: '',
     ollamaHost: 'http://localhost:11434',
     logLevel: 'INFO',
-    jiraBase: 'http://localhost:4001',
-    jiraEmail: '',
-    jiraProjectKey: 'QA',
+    jiraBase: 'https://materialplus.atlassian.net',
+    jiraEmail: 'arjit.yadav@materialplus.io',
+    jiraProjectKey: 'AICOE',
     jiraBoardId: '3968',
-    jiraBearer: ''
+    jiraBearer: '', // Configure via Configuration page
   };
 }
 
@@ -826,9 +826,9 @@ ipcMain.handle('save-configuration', async (event, config) => {
       'GOOGLE_API_KEY': config.googleApiKey || '',
       'OLLAMA_HOST': config.ollamaHost || 'http://localhost:11434',
       'LOG_LEVEL': config.logLevel || 'INFO',
-      'JIRA_BASE': (config.jiraBase || 'http://localhost:4001').replace(/\/+$/, ''), // Remove trailing slashes
-      'JIRA_EMAIL': config.jiraEmail || '',
-      'JIRA_PROJECT_KEY': config.jiraProjectKey || 'QA',
+      'JIRA_BASE': config.jiraBase || 'https://materialplus.atlassian.net', // Remove trailing slashes
+      'JIRA_EMAIL': config.jiraEmail || 'arjit.yadav@materialplus.io',
+      'JIRA_PROJECT_KEY': config.jiraProjectKey || 'AICOE',
       'JIRA_BOARD_ID': config.jiraBoardId || '3968',
       'JIRA_BEARER': config.jiraBearer || '',
     };
